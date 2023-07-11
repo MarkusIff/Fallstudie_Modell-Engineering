@@ -1,10 +1,9 @@
 """
-Created on Sat Jul  8 12:51:20 2023
-
 explorative Datenanalyse
 """
+# Vorbereitung
 
-# Pakete importieren
+# Biblipotheken importieren
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -19,7 +18,9 @@ data['tmsp'] = data['tmsp'].astype(str)
 # Datentypen ausgeben
 print(data.dtypes)
 
-# Merkamale generieren
+"""
+Merkamale generieren und im Dataframe hinzufügen
+"""
 # Aufsplitten der Spalte tmsp in Jahr, Montag, Tag, Uhrzeit und Datum
 data[['Jahr','Monat','Tag']] = data['tmsp'].str.split('-', n = 3, expand =True)
 data['Tag'] = data['Tag'].str.slice(stop=-9)
@@ -40,6 +41,9 @@ data.loc[(data['PSP'] == 'Simplecard') & (data['success'] == 0), 'gebuehr'] = 0.
 # DataFrame als Excel-Datei speichern
 #data.to_excel('C:\Datensaetze generieren/datei.xlsx', index=False)
 
+"""
+weitere Variablen für die explorative Datenanalyse generieren
+"""
 # Erfolge pro PSP
 erfolg_moneycard = len(data[(data['PSP'] == 'Moneycard') & (data['success'] == 1)])
 erfolg_goldcard = len(data[(data['PSP'] == 'Goldcard') & (data['success'] == 1)])
@@ -66,7 +70,7 @@ confidence_interval = 1.96 * (std_counts / np.sqrt(len(hourly_counts)))
 # Berechnung des Konfidenzintervalls für die Anzahl der Transaktionen pro Tag
 mean_counts_d = day_counts.mean()
 std_counts_d = day_counts.std()
-confidence_interval = 1.96 * (std_counts_d / np.sqrt(len(day_counts)))
+confidence_interval_t = 1.96 * (std_counts_d / np.sqrt(len(day_counts)))
 
 
 # Anzahl der Erfolge nach PSP gruppieren
@@ -94,6 +98,11 @@ correlation_matrix = data.corr()
 gebuehr_avg = data.groupby(['card', 'PSP']).mean()['gebuehr']
 # durchschnittliche Erfolgsrate berechnen
 erfolgsrate_avg = data.groupby(['card', 'PSP']).mean()['success']
+
+
+"""
+Grafiken erstellen
+"""
 
 # Balkendiagramm erstellen
 plt.figure(num='PSP')
@@ -154,7 +163,7 @@ plt.ylabel('Anzahl der Transaktionen')
 plt.legend()
 plt.subplot(3,1,2)
 plt.plot(day_counts.index, day_counts.values, marker='o', linestyle='-', label='Transaktionen pro Tag')
-plt.fill_between(day_counts.index, mean_counts_d-confidence_interval, mean_counts_d+confidence_interval, color='gray', alpha=0.3, label='Konfidenzintervall')
+plt.fill_between(day_counts.index, mean_counts_d-confidence_interval_t, mean_counts_d+confidence_interval_t, color='gray', alpha=0.3, label='Konfidenzintervall')
 # Achsentitel hinzufügen
 plt.xlabel('Tag')
 plt.ylabel('Anzahl der Transaktionen')
