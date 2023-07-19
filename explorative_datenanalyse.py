@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 #import sys
 
 # Onlineshop Daten einlesen
-eingabe = 'C:\Datensaetze generieren' #input("geben Sie den Speicherort des Datensatzes an: ")
+eingabe = input("geben Sie den Speicherort des Datensatzes an: ")
 eingabedatei = 'PSP_Jan_Feb_2019.xlsx'
 data = pd.read_excel(eingabe + '/' + eingabedatei)
 
@@ -77,12 +77,12 @@ month_counts = data.groupby('Monat').size()
 # Berechnung des Konfidenzintervalls für die Anzahl der Transaktionen pro Stunde
 mean_counts = hourly_counts.mean()
 std_counts = hourly_counts.std()
-confidence_interval = 1.96 * (std_counts / np.sqrt(len(hourly_counts)))
+confidence_interval = 1.95 * (std_counts / np.sqrt(len(hourly_counts)))
 
 # Berechnung des Konfidenzintervalls für die Anzahl der Transaktionen pro Tag
 mean_counts_d = day_counts.mean()
 std_counts_d = day_counts.std()
-confidence_interval_t = 1.96 * (std_counts_d / np.sqrt(len(day_counts)))
+confidence_interval_t = 1.95 * (std_counts_d / np.sqrt(len(day_counts)))
 
 
 # Anzahl der Erfolge nach PSP gruppieren
@@ -371,15 +371,15 @@ X_train_ohne_duplikate, X_test_ohne_duplikate, y_train_ohne_duplikate, y_test_oh
 
 
 # DataFrame als Excel-Datei für die weitere Bearbeitung speichern
-#ausgabe = input("geben Sie den Speicherort für die Ausgabe an: ")
-#ausgabedatei = 'bereinigter_Datensatz.xlsx'
-data.to_excel('C:\Datensaetze generieren/bereinigter_Datensatz.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-data_2.to_excel('C:\Datensaetze generieren/bereinigter_Datensatz_ohne_Duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-X_train.to_excel('C:\Datensaetze generieren/X_train.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-X_test.to_excel('C:\Datensaetze generieren/X_test.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-y_train.to_excel('C:\Datensaetze generieren/y_train.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-y_test.to_excel('C:\Datensaetze generieren/y_test.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-X_train_ohne_duplikate.to_excel('C:\Datensaetze generieren/X_train_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-X_test_ohne_duplikate.to_excel('C:\Datensaetze generieren/X_test_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-y_train_ohne_duplikate.to_excel('C:\Datensaetze generieren/y_train_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
-y_test_ohne_duplikate.to_excel('C:\Datensaetze generieren/y_test_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+ausgabe = input("geben Sie den Speicherort für die Ausgabe an: ")
+
+data.to_excel(ausgabe + '/bereinigter_Datensatz.xlsx' , index=False)
+data_2.to_excel(ausgabe + '/bereinigter_Datensatz_ohne_Duplikate.xlsx', index=False)
+X_train.to_excel(ausgabe + '/X_train.xlsx', index=False)
+X_test.to_excel(ausgabe + '/X_test.xlsx', index=False) 
+y_train.to_excel(ausgabe + '/y_train.xlsx', index=False) 
+y_test.to_excel(ausgabe + '/y_test.xlsx', index=False) 
+X_train_ohne_duplikate.to_excel(ausgabe + '/X_train_ohne_duplikate.xlsx', index=False)
+X_test_ohne_duplikate.to_excel(ausgabe + '/X_test_ohne_duplikate.xlsx', index=False)
+y_train_ohne_duplikate.to_excel(ausgabe + '/y_train_ohne_duplikate.xlsx', index=False) 
+y_test_ohne_duplikate.to_excel(ausgabe + '/y_test_ohne_duplikate.xlsx', index=False) 
