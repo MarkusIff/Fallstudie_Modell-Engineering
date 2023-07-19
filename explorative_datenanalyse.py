@@ -8,23 +8,39 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from sklearn.model_selection import train_test_split
+#import sys
 
-# Produktionsdaten einlesen
-data = pd.read_excel('C:\Datensaetze generieren/PSP_Jan_Feb_2019.xlsx')
-
-# Spalten formatieren
-data['tmsp'] = data['tmsp'].astype(str)
-
-# Datentypen ausgeben
-print(data.dtypes)
+# Onlineshop Daten einlesen
+eingabe = 'C:\Datensaetze generieren' #input("geben Sie den Speicherort des Datensatzes an: ")
+eingabedatei = 'PSP_Jan_Feb_2019.xlsx'
+data = pd.read_excel(eingabe + '/' + eingabedatei)
 
 """
-Merkamale generieren und im Dataframe hinzufügen
+Merkmale generieren und im Dataframe hinzufügen
 """
+# zwei Überweisungen in derselben Minute, aus demselben Land und mit demselben Überweisungsbetrag in Spalte Duplikat kennzeichnen
+# Konvertieren des Zeitstempels in den DateTime-Datentyp
+data['tmsp'] = pd.to_datetime(data['tmsp'])
+
+# Überprüfen auf Duplikate basierend auf den Bedingungen
+for index, row in data.iterrows():
+    if index < len(data) - 1:
+        if data.loc[index,'country'] == data.loc[index + 1,'country'] and data.loc[index,'amount'] == data.loc[index + 1,'amount'] and data.loc[index,'success'] == 0 and data.loc[index,'tmsp'].minute == data.loc[index + 1,'tmsp'].minute:
+            if data.loc[index + 1,'success'] == 0:
+                data.loc[index,'Duplikat'] = 1
+                data.loc[index + 1,'Duplikat'] = 1
+            else:
+                data.loc[index,'Duplikat'] = 1
+# Setzen der fehlenden Werte auf 0
+data['Duplikat'] = data['Duplikat'].fillna(0)
+
 # Aufsplitten der Spalte tmsp in Jahr, Montag, Tag, Uhrzeit und Datum
+data['tmsp'] = data['tmsp'].astype(str)
 data[['Jahr','Monat','Tag']] = data['tmsp'].str.split('-', n = 3, expand =True)
 data['Tag'] = data['Tag'].str.slice(stop=-9)
 data['uhrzeit'] = data['tmsp'].str.slice(start=11)
+
 
 # Servicegebuehren der PSPs hinzufügen
 data['gebuehr'] = 0
@@ -36,10 +52,6 @@ data.loc[(data['PSP'] == 'UK_Card') & (data['success'] == 1), 'gebuehr'] = 3
 data.loc[(data['PSP'] == 'UK_Card') & (data['success'] == 0), 'gebuehr'] = 1
 data.loc[(data['PSP'] == 'Simplecard') & (data['success'] == 1), 'gebuehr'] = 1
 data.loc[(data['PSP'] == 'Simplecard') & (data['success'] == 0), 'gebuehr'] = 0.5
-
-
-# DataFrame als Excel-Datei speichern
-#data.to_excel('C:\Datensaetze generieren/datei.xlsx', index=False)
 
 """
 weitere Variablen für die explorative Datenanalyse generieren
@@ -105,17 +117,24 @@ Grafiken erstellen
 """
 
 # Balkendiagramm erstellen
-plt.figure(num='PSP')
-plt.bar(success_psp.index, success_psp.values, width=0.3, edgecolor='black', linewidth=1.2)
+plt.figure(num='success je card und PSP', figsize=(8, 6))
+plt.subplot(2, 1, 1) 
+bars_1 = plt.bar(success_psp.index, success_psp.values, width=0.3, edgecolor='black', linewidth=1.2)
+# Füge den Text für jeden Balken hinzu
+for bar in bars_1:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width() / 2, height-100, str(height), ha='center', va='top')    
 plt.xlabel('PSP')
 plt.ylabel('Anzahl')
-plt.title("erfolgreiche Transaktionen je PSP")
-
-plt.figure(num='card')
-plt.bar(success_card.index, success_card.values, width=0.3, edgecolor='black', linewidth=1.2)
+plt.subplot(2, 1, 2) 
+bars_2 = plt.bar(success_card.index, success_card.values, width=0.3, edgecolor='black', linewidth=1.2)
+# Füge den Text für jeden Balken hinzu
+for bar in bars_2:
+    height = bar.get_height()
+    plt.text(bar.get_x() + bar.get_width() / 2, height-100, str(height), ha='center', va='top')   
 plt.xlabel('Kartenanbieter')
 plt.ylabel('Anzahl')
-plt.title("erfolgreiche Transaktionen je Karte")
+
 
 # X-Koordinaten der Balken
 x = np.arange(2)
@@ -158,7 +177,7 @@ plt.plot(hourly_counts.index, hourly_counts.values, marker='o', linestyle='-', l
 plt.fill_between(hourly_counts.index, mean_counts-confidence_interval, mean_counts+confidence_interval, color='gray', alpha=0.3, label='Konfidenzintervall')
 # Achsentitel hinzufügen
 plt.xlabel('Stunde')
-plt.ylabel('Anzahl der Transaktionen')
+plt.ylabel('Anzahl Transaktionen')
 # Legende anzeigen
 plt.legend()
 plt.subplot(3,1,2)
@@ -166,14 +185,14 @@ plt.plot(day_counts.index, day_counts.values, marker='o', linestyle='-', label='
 plt.fill_between(day_counts.index, mean_counts_d-confidence_interval_t, mean_counts_d+confidence_interval_t, color='gray', alpha=0.3, label='Konfidenzintervall')
 # Achsentitel hinzufügen
 plt.xlabel('Tag')
-plt.ylabel('Anzahl der Transaktionen')
+plt.ylabel('Anzahl Transaktionen')
 # Legende anzeigen
 plt.legend()
 plt.subplot(3,1,3)
 plt.plot(month_counts.index, month_counts.values, marker='o', linestyle='-', label='Transaktionen pro Monat')
 # Achsentitel hinzufügen
 plt.xlabel('Monat')
-plt.ylabel('Anzahl der Transaktionen')
+plt.ylabel('Anzahl Transaktionen')
 # Legende anzeigen
 plt.legend()
 plt.subplots_adjust(hspace=0.4, wspace=0.1)
@@ -181,9 +200,17 @@ plt.subplots_adjust(hspace=0.4, wspace=0.1)
 # Boxplot erstellen
 plt.figure(num='Transaktionen pro Land', figsize=(8, 6))
 plt.subplot(3, 1, 1) 
-plt.boxplot([data[data['country'] == 'Germany']['amount'],
+bp = plt.boxplot([data[data['country'] == 'Germany']['amount'],
              data[data['country'] == 'Austria']['amount'],
              data[data['country'] == 'Switzerland']['amount']])
+# Werte für den Median, den minimalen und den maximalen Wert
+median = bp['medians'][0].get_ydata()[0]
+minimum = bp['caps'][0].get_ydata()[0]
+maximum = bp['caps'][1].get_ydata()[0]
+# Füge den Text an den gewünschten Positionen hinzu
+plt.text(0.6, median, str(median), ha='left', va='bottom')
+plt.text(0.6, minimum, str(minimum), ha='left', va='bottom')
+plt.text(0.6, maximum, str(maximum), ha='left', va='bottom')
 # Achsentitel hinzufügen
 plt.ylabel('Transaktionsbetrag')
 # Länderbeschriftungen hinzufügen
@@ -192,6 +219,14 @@ plt.subplot(3, 1, 2)
 plt.boxplot([data[data['card'] == 'Diners']['amount'],
              data[data['card'] == 'Master']['amount'],
              data[data['card'] == 'Visa']['amount']])
+# Werte für den Median, den minimalen und den maximalen Wert
+median = bp['medians'][0].get_ydata()[0]
+minimum = bp['caps'][0].get_ydata()[0]
+maximum = bp['caps'][1].get_ydata()[0]
+# Füge den Text an den gewünschten Positionen hinzu
+plt.text(0.6, median, str(median), ha='left', va='bottom')
+plt.text(0.6, minimum, str(minimum), ha='left', va='bottom')
+plt.text(0.6, maximum, str(maximum), ha='left', va='bottom')
 # Achsentitel hinzufügen
 plt.ylabel('Transaktionsbetrag')
 # Länderbeschriftungen hinzufügen
@@ -201,6 +236,14 @@ plt.boxplot([data[data['PSP'] == 'Goldcard']['amount'],
              data[data['PSP'] == 'Moneycard']['amount'],
              data[data['PSP'] == 'Simplecard']['amount'],
              data[data['PSP'] == 'UK_Card']['amount']])
+# Werte für den Median, den minimalen und den maximalen Wert
+median = bp['medians'][0].get_ydata()[0]
+minimum = bp['caps'][0].get_ydata()[0]
+maximum = bp['caps'][1].get_ydata()[0]
+# Füge den Text an den gewünschten Positionen hinzu
+plt.text(0.5, median, str(median), ha='left', va='bottom')
+plt.text(0.6, minimum, str(minimum), ha='left', va='bottom')
+plt.text(0.6, maximum, str(maximum), ha='left', va='bottom')
 # Achsentitel hinzufügen
 plt.ylabel('Transaktionsbetrag')
 # Länderbeschriftungen hinzufügen
@@ -257,3 +300,86 @@ for i, (kreditkarte, psp) in enumerate(gebuehr_avg.index):
 plt.xlabel('Servicegebühr')
 plt.ylabel('Erfolgsrate')
 plt.legend()
+
+
+"""
+Datenaufbereitung
+"""
+
+# Formatierung und Umbenennung der Spalten
+data.rename(columns={'Spalte1': 'laufende Nr.'}, inplace=True)
+data['tmsp'] = pd.to_datetime(data['tmsp'])
+data['Duplikat'] = data['Duplikat'].astype(int)
+print(data.dtypes)
+
+# Auswerten der Datenhistorie
+min_zeitstempel = data['tmsp'].min()
+max_zeitstempel = data['tmsp'].max()
+has_every_minute = (max_zeitstempel - min_zeitstempel) >= pd.Timedelta(minutes=1)
+if (max_zeitstempel - min_zeitstempel) >= pd.Timedelta(minutes=1):
+    print("Die Datenhistorie ist vollständig.")
+else:
+    print("Die Datenhistorie ist unvollständig.")
+    
+# Überprüfen des Dataframe auf leere Einträge
+hat_leere_zellen = data.isnull().any().any()
+if hat_leere_zellen:
+    print("Der Dataframe enthält leere Zellen.")
+else:
+    print("Der Dataframe enthält keine leeren Zellen.")
+    
+# Sinnhaftigkeit der Daten überprüfen
+# Überprüfen, ob die Spalte "success" nur die Werte 0 und 1 enthält
+unique_values = data['success'].unique()
+if len(unique_values) == 2 and 0 in unique_values and 1 in unique_values:
+    print("Die Spalte 'success' enthält ausschließlich die Werte 0 und 1.")
+else:
+    print("Die Spalte 'success' enthält andere Werte als 0 und 1.")  
+# Überprüfen, ob die Spalte "PSP" nur die spezifischen Werte enthält
+allowed_values = ['UK_Card', 'Moneycard', 'Simplecard', 'Goldcard']
+result = data['PSP'].isin(allowed_values).all()
+if result:
+    print("Die Spalte 'PSP' enthält ausschließlich die erlaubten Werte.")
+else:
+    print("Die Spalte 'PSP' enthält andere Werte als die erlaubten.")
+# Überprüfen, ob die Spalte "PSP" nur die spezifischen Werte enthält
+allowed_values = ['Austria', 'Germany', 'Switzerland']
+result = data['country'].isin(allowed_values).all()
+if result:
+    print("Die Spalte 'country' enthält ausschließlich die erlaubten Werte.")
+else:
+    print("Die Spalte 'country' enthält andere Werte als die erlaubten.")
+# Überprüfen, ob die Spalte "PSP" nur die spezifischen Werte enthält
+allowed_values = ['Diners', 'Master', 'Visa']
+result = data['card'].isin(allowed_values).all()
+if result:
+    print("Die Spalte 'card' enthält ausschließlich die erlaubten Werte.")
+else:
+    print("Die Spalte 'card' enthält andere Werte als die erlaubten.")
+
+# Dataframe generieren bei dem Datensätze mit zwei Überweisungen in derselben Minute, aus demselben Land und mit demselben Überweisungsbetrag entfernt werden
+# Daten in Spalte Duplikat bereits markiert
+data_2 = data.drop(data[data['Duplikat'] == 1].index)
+
+# nicht notwendige Merkmale entfernen aus data und data_2 entfernen
+data = data.drop(['Duplikat','Jahr', 'Monat', 'Tag', 'uhrzeit', 'Hour'], axis=1)
+data_2 = data_2.drop(['Duplikat','Jahr', 'Monat', 'Tag', 'uhrzeit', 'Hour'], axis=1)
+
+# Erstellen der Trainings- und Testdatensätze 80 / 20
+X_train, X_test, y_train, y_test = train_test_split(data[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data['success'], test_size=0.2, random_state=42)
+X_train_ohne_duplikate, X_test_ohne_duplikate, y_train_ohne_duplikate, y_test_ohne_duplikate = train_test_split(data_2[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data_2['success'], test_size=0.2, random_state=42)
+
+
+# DataFrame als Excel-Datei für die weitere Bearbeitung speichern
+#ausgabe = input("geben Sie den Speicherort für die Ausgabe an: ")
+#ausgabedatei = 'bereinigter_Datensatz.xlsx'
+data.to_excel('C:\Datensaetze generieren/bereinigter_Datensatz.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+data_2.to_excel('C:\Datensaetze generieren/bereinigter_Datensatz_ohne_Duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+X_train.to_excel('C:\Datensaetze generieren/X_train.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+X_test.to_excel('C:\Datensaetze generieren/X_test.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+y_train.to_excel('C:\Datensaetze generieren/y_train.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+y_test.to_excel('C:\Datensaetze generieren/y_test.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+X_train_ohne_duplikate.to_excel('C:\Datensaetze generieren/X_train_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+X_test_ohne_duplikate.to_excel('C:\Datensaetze generieren/X_test_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+y_train_ohne_duplikate.to_excel('C:\Datensaetze generieren/y_train_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
+y_test_ohne_duplikate.to_excel('C:\Datensaetze generieren/y_test_ohne_duplikate.xlsx', index=False) #ausgabe + ausgabedatei, index=False)
