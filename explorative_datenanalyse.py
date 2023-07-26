@@ -53,6 +53,7 @@ data.loc[(data['PSP'] == 'UK_Card') & (data['success'] == 0), 'gebuehr'] = 1
 data.loc[(data['PSP'] == 'Simplecard') & (data['success'] == 1), 'gebuehr'] = 1
 data.loc[(data['PSP'] == 'Simplecard') & (data['success'] == 0), 'gebuehr'] = 0.5
 
+
 """
 weitere Variablen für die explorative Datenanalyse generieren
 """
@@ -310,7 +311,6 @@ Datenaufbereitung
 data.rename(columns={'Spalte1': 'laufende Nr.'}, inplace=True)
 data['tmsp'] = pd.to_datetime(data['tmsp'])
 data['Duplikat'] = data['Duplikat'].astype(int)
-print(data.dtypes)
 
 # Auswerten der Datenhistorie
 min_zeitstempel = data['tmsp'].min()
@@ -357,6 +357,10 @@ if result:
 else:
     print("Die Spalte 'card' enthält andere Werte als die erlaubten.")
 
+# Formatierung des Zeitstemples zurück in einen String
+data['tmsp'] = data['tmsp'].astype(str)
+print(data.dtypes)
+
 # Dataframe generieren bei dem Datensätze mit zwei Überweisungen in derselben Minute, aus demselben Land und mit demselben Überweisungsbetrag entfernt werden
 # Daten in Spalte Duplikat bereits markiert
 data_2 = data.drop(data[data['Duplikat'] == 1].index)
@@ -366,8 +370,8 @@ data = data.drop(['Duplikat','Jahr', 'Monat', 'Tag', 'uhrzeit', 'Hour'], axis=1)
 data_2 = data_2.drop(['Duplikat','Jahr', 'Monat', 'Tag', 'uhrzeit', 'Hour'], axis=1)
 
 # Erstellen der Trainings- und Testdatensätze 80 / 20
-X_train, X_test, y_train, y_test = train_test_split(data[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data['success'], test_size=0.2, random_state=42)
-X_train_ohne_duplikate, X_test_ohne_duplikate, y_train_ohne_duplikate, y_test_ohne_duplikate = train_test_split(data_2[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data_2['success'], test_size=0.2, random_state=42)
+#X_train, X_test, y_train, y_test = train_test_split(data[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data['success'], test_size=0.2, random_state=42)
+#X_train_ohne_duplikate, X_test_ohne_duplikate, y_train_ohne_duplikate, y_test_ohne_duplikate = train_test_split(data_2[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data_2['success'], test_size=0.2, random_state=42)
 
 
 # DataFrame als Excel-Datei für die weitere Bearbeitung speichern
@@ -375,11 +379,11 @@ ausgabe = input("geben Sie den Speicherort für die Ausgabe an: ")
 
 data.to_excel(ausgabe + '/bereinigter_Datensatz.xlsx' , index=False)
 data_2.to_excel(ausgabe + '/bereinigter_Datensatz_ohne_Duplikate.xlsx', index=False)
-X_train.to_excel(ausgabe + '/X_train.xlsx', index=False)
-X_test.to_excel(ausgabe + '/X_test.xlsx', index=False) 
-y_train.to_excel(ausgabe + '/y_train.xlsx', index=False) 
-y_test.to_excel(ausgabe + '/y_test.xlsx', index=False) 
-X_train_ohne_duplikate.to_excel(ausgabe + '/X_train_ohne_duplikate.xlsx', index=False)
-X_test_ohne_duplikate.to_excel(ausgabe + '/X_test_ohne_duplikate.xlsx', index=False)
-y_train_ohne_duplikate.to_excel(ausgabe + '/y_train_ohne_duplikate.xlsx', index=False) 
-y_test_ohne_duplikate.to_excel(ausgabe + '/y_test_ohne_duplikate.xlsx', index=False) 
+#X_train.to_excel(ausgabe + '/X_train.xlsx', index=False)
+#X_test.to_excel(ausgabe + '/X_test.xlsx', index=False) 
+#y_train.to_excel(ausgabe + '/y_train.xlsx', index=False) 
+#y_test.to_excel(ausgabe + '/y_test.xlsx', index=False) 
+#X_train_ohne_duplikate.to_excel(ausgabe + '/X_train_ohne_duplikate.xlsx', index=False)
+#X_test_ohne_duplikate.to_excel(ausgabe + '/X_test_ohne_duplikate.xlsx', index=False)
+#y_train_ohne_duplikate.to_excel(ausgabe + '/y_train_ohne_duplikate.xlsx', index=False) 
+#y_test_ohne_duplikate.to_excel(ausgabe + '/y_test_ohne_duplikate.xlsx', index=False) 
