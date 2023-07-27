@@ -1,23 +1,22 @@
-# -*- coding: utf-8 -*-
 """
 erstellen eines maschinellen Lernmodells
+Vorbereitung
 """
 
-# Vorbereitung
-
 # Biblipotheken importieren
-#import explorative_datenanalyse as data
 import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
-import sys
+from sklearn.metrics import roc_auc_score
+#from sklearn.model_selection import GridSearchCV
 
 ''''
 Konsolenabfrage mit zulässigen Wörtern
-eingabe = Abfrage in Konsole
-zulässige Wörter = String mit zulässigen Wörtern für die Abfrage
+promt: Eingabeaufforderung
+zulässige Wörter: String mit zulässigen Wörtern für die Eingabe
+return: Eingabe der Konsolenabfrage
 '''
 def eingabe_mit_zulaessigen_woertern(prompt, zulaessige_woerter):
     while True:
@@ -29,11 +28,9 @@ def eingabe_mit_zulaessigen_woertern(prompt, zulaessige_woerter):
             
 
 # bereinigte Daten einlesen
-data_ohne_duplikate = pd.read_excel('C:\Datensaetze generieren/bereinigter_Datensatz_ohne_Duplikate.xlsx')
-data_mit_duplikate = pd.read_excel('C:\Datensaetze generieren/bereinigter_Datensatz.xlsx')    
-
-# zukünftige Daten einlesen
-future_data = pd.read_excel('C:\Datensaetze generieren/future_data.xlsx')   
+eingabe = input("Speicherort der Eingabedaten: ")
+data_ohne_duplikate = pd.read_excel(eingabe + '/bereinigter_Datensatz_ohne_Duplikate.xlsx')
+data_mit_duplikate = pd.read_excel(eingabe + '/bereinigter_Datensatz.xlsx')    
 
 # Definieren Sie die Features (unabhängigen Variablen) und die Zielvariable (Kreditkarte)
 X = data_mit_duplikate.drop(columns=['tmsp','success','gebuehr', 'laufende Nr.'])
@@ -45,12 +42,30 @@ X = pd.get_dummies(X, columns=['country', 'PSP', 'card'])
 # Teilen Sie die Daten in Trainings- und Testdaten auf (z.B. 80% Training, 20% Test)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-'''Normale logistic Regression'''
-
+'''
+Normale logistic Regression
+'''
 # logistic Regression
-log_reg_model = LogisticRegression(C=0.1, penalty='l2', max_iter=500, class_weight='balanced', solver='lbfgs')
+log_reg_model = LogisticRegression(C= 0.1, class_weight= 'none', max_iter= 500, penalty= 'l2', solver= 'newton-cg')
 
-# Trainieren Sie die logistische Regression
+# grid_search führt zu langen Ladezeiten. Ergebnis von grid search in log_reg_model = logisitcRegression() oben befüllt und damit weitergearbeitet
+# Definiere eine Liste von möglichen Werten für den Regularisierungsparameter C
+#param_grid = {'C': [0.1, 0.5, 1.0, 5.0, 10.0],
+#              'penalty':['l1','l2'],
+#              'solver':['liblinear','lbfgs','newton-cg','sag','saga'],
+#              'max_iter':[500,1000,10000],
+#             'class_weight':['balanced','none']}
+
+# Erstelle das Grid Search Objekt mit Cross-Validation (z.B. 5-Fold Cross-Validation)
+#grid_search = GridSearchCV(log_reg_model, param_grid, cv=5)
+
+# Führe die Grid Search durch
+#grid_search.fit(X_train, y_train)
+
+# Zeige die besten Hyperparameter-Kombinationen und die entsprechende Leistungsmetrik (z.B. Genauigkeit) an
+#print("Beste Hyperparameter-Kombination:", grid_search.best_params_)
+#print("Beste Leistung (z.B. Genauigkeit):", grid_search.best_score_)
+
 log_reg_model.fit(X_train, y_train)
 
 # Evaluieren Sie die Leistung des Modells auf den Testdaten (optional)
@@ -63,14 +78,23 @@ with open('trainiertes_logistisches_modell.pkl', 'wb') as file:
     pickle.dump(log_reg_model, file)
     
 # Vorhersage für die Testdaten
-y_pred = np.ravel(log_reg_model.predict(X_test))    
+y_pred = np.ravel(log_reg_model.predict(X_test))
+auc_score = roc_auc_score(y_test, y_pred)
+print("AUC-Wert:", auc_score)    
 classification_report_result = classification_report(y_test, y_pred)
 print(f'Classification Report success:\n{classification_report_result}')
 
 
-'''Vorhersage machen'''
+'''
+Vorhersage machen
+'''
+# Future Datafram erzeugen
+columns = ["amount", "3D_secured", "country_Austria", "country_Germany",  "country_Switzerland", "PSP_Goldcard","PSP_Moneycard", "PSP_Simplecard", "PSP_UK_Card", "card_Diners", "card_Master", "card_Visa"]
+future_data = pd.DataFrame({col: [] for col in columns})
 
-# Dataframe aufgrund von Benutzerangaben erstellen
+# Dataframe Future Data befüllen u.a. aufgrund von Benutzerangaben
+print('Um den besten PSP zu wählen, gebe bitte die folgenden Informationen für deine Transaktion ein: ')
+ausgabe = input("Speicherort der PSP Vorhersage: ")
 zulaessige_woerter_kreditkarte = ['Visa','Master','Diners']
 kreditkarte = eingabe_mit_zulaessigen_woertern("Name der Kreditkarte: ", zulaessige_woerter_kreditkarte)
 zulaessige_woerte_land = ['Deutschland','Schweitz','Australien']
@@ -79,12 +103,33 @@ zulaessige_woerter_secured = ['ja', 'nein']
 secured =  eingabe_mit_zulaessigen_woertern("benutzen Sie die 3D Identifizierung: ", zulaessige_woerter_secured)
 betrag = input("geben Sie den Betrag an: ")
 
-future_data['amount'] = int(betrag)
+future_data['amount']= [int(betrag), int(betrag), int(betrag), int(betrag)]
 
 if secured == "ja":
+    
     future_data['3D_secured'] = 1
 else:
     future_data['3D_secured'] = 0
+
+future_data.loc[0, 'PSP_Goldcard'] = 1 
+future_data.loc[1, 'PSP_Goldcard'] = 0 
+future_data.loc[2, 'PSP_Goldcard'] = 0 
+future_data.loc[3, 'PSP_Goldcard'] = 0
+
+future_data.loc[0, 'PSP_Moneycard'] = 0 
+future_data.loc[1, 'PSP_Moneycard'] = 1 
+future_data.loc[2, 'PSP_Moneycard'] = 0 
+future_data.loc[3, 'PSP_Moneycard'] = 0
+
+future_data.loc[0, 'PSP_Simplecard'] = 0 
+future_data.loc[1, 'PSP_Simplecard'] = 0 
+future_data.loc[2, 'PSP_Simplecard'] = 1 
+future_data.loc[3, 'PSP_Simplecard'] = 0
+
+future_data.loc[0, 'PSP_UK_Card'] = 0 
+future_data.loc[1, 'PSP_UK_Card'] = 0 
+future_data.loc[2, 'PSP_UK_Card'] = 0 
+future_data.loc[3, 'PSP_UK_Card'] = 1  
     
 if land == "Australien":
     future_data['country_Austria'] = 1
@@ -115,8 +160,10 @@ else:
 predictions_success = log_reg_model.predict(future_data)
 probabilities = log_reg_model.predict_proba(future_data)
 
-''' Vorhersagen auswerten'''
-# Umwandeln der Arrays VOrhersage und Wahrscheinlichkeiten in Dataframes
+'''
+Vorhersagen auswerten
+'''
+# Umwandeln der Arrays Vorhersage und Wahrscheinlichkeiten in Dataframes
 predictions_success = pd.DataFrame(predictions_success, columns=['success'])
 probabilities = pd.DataFrame(probabilities, columns=['Transaktion gescheitert', 'Transaktion erfolgreich'])
 
@@ -135,7 +182,7 @@ auswertung.loc[(auswertung['PSP_Simplecard'] == 1) & (auswertung['success'] == 1
 auswertung.loc[(auswertung['PSP_Simplecard'] == 1) & (auswertung['success'] == 0), 'gebuehr'] = 0.5
 
 # DataFrame in eine Excel-Datei mit Formatierung speichern
-with pd.ExcelWriter('C:\Datensaetze generieren\Vorhersage.xlsx', engine='xlsxwriter') as writer:
+with pd.ExcelWriter(ausgabe + '\Vorhersage.xlsx', engine='xlsxwriter') as writer:
     auswertung.to_excel(writer, sheet_name='Vorhersage', index=False)
 
     # Zugriff auf das Excel-Workbook und das Arbeitsblatt
@@ -152,18 +199,28 @@ with pd.ExcelWriter('C:\Datensaetze generieren\Vorhersage.xlsx', engine='xlsxwri
         if row['Transaktion erfolgreich'] > 0.7:
             worksheet.set_row(row_idx + 1, None, format_green)
             zuordnung = True
-            sys.exit()
+            break
         elif row['Transaktion erfolgreich']  > 0.6 and row['gebuehr']  < 10:
             worksheet.set_row(row_idx + 1, None, format_green)
             zuordnung = True
-            sys.exit()
+            break
         elif row['Transaktion erfolgreich']  > 0.5 and row['gebuehr']  < 2:
             worksheet.set_row(row_idx + 1, None, format_green)
             zuordnung = True
-            sys.exit()
+            break
+        elif row['Transaktion erfolgreich']  < 0.5 and row['gebuehr']  < 1:
+            worksheet.set_row(row_idx + 1, None, format_green)
+            zuordnung = True
+            break
     
-# Wenn PSP Zuordnung fehlschlägt manuell Zuordnnung
+# Wenn PSP Zuordnung fehlschlägt manuell Zuordnnung sonst bevorzugten PSP in Konsole ausgeben 
 if zuordnung == False:
     print('manuelle PSP Zuordnung erforderlich')
+else:
+    zu_ueberpruefende_spalten = ['PSP_Goldcard', 'PSP_Moneycard', 'PSP_Simplecard', 'PSP_UK_Card'] # Liste mit den Namen der zu überprüfenden Spalten
+    for column in zu_ueberpruefende_spalten:
+        if auswertung.loc[row_idx, column] == 1:            
+            print('bevorzugter PSP: ' + column)
+    
 
 
