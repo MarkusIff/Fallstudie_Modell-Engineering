@@ -8,12 +8,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
-from sklearn.model_selection import train_test_split
-#import sys
 
 # Onlineshop Daten einlesen
 eingabe = input("geben Sie den Speicherort des Datensatzes an: ")
-eingabedatei = 'PSP_Jan_Feb_2019.xlsx'
+eingabedatei = input("geben Sie den Dateinamen des Datensatzes an: ")
 data = pd.read_excel(eingabe + '/' + eingabedatei)
 
 """
@@ -55,7 +53,7 @@ data.loc[(data['PSP'] == 'Simplecard') & (data['success'] == 0), 'gebuehr'] = 0.
 
 
 """
-weitere Variablen für die explorative Datenanalyse generieren
+weitere Variablen für die explorative Datenanalyse generieren ohne diese im Dateframe hinzuzufügen
 """
 # Erfolge pro PSP
 erfolg_moneycard = len(data[(data['PSP'] == 'Moneycard') & (data['success'] == 1)])
@@ -116,7 +114,6 @@ erfolgsrate_avg = data.groupby(['card', 'PSP']).mean()['success']
 """
 Grafiken erstellen
 """
-
 # Balkendiagramm erstellen
 plt.figure(num='success je card und PSP', figsize=(8, 6))
 plt.subplot(2, 1, 1) 
@@ -135,7 +132,6 @@ for bar in bars_2:
     plt.text(bar.get_x() + bar.get_width() / 2, height-100, str(height), ha='center', va='top')   
 plt.xlabel('Kartenanbieter')
 plt.ylabel('Anzahl')
-
 
 # X-Koordinaten der Balken
 x = np.arange(2)
@@ -208,7 +204,7 @@ bp = plt.boxplot([data[data['country'] == 'Germany']['amount'],
 median = bp['medians'][0].get_ydata()[0]
 minimum = bp['caps'][0].get_ydata()[0]
 maximum = bp['caps'][1].get_ydata()[0]
-# Füge den Text an den gewünschten Positionen hinzu
+# Text an den gewünschten Positionen hinzufügen
 plt.text(0.6, median, str(median), ha='left', va='bottom')
 plt.text(0.6, minimum, str(minimum), ha='left', va='bottom')
 plt.text(0.6, maximum, str(maximum), ha='left', va='bottom')
@@ -224,7 +220,7 @@ plt.boxplot([data[data['card'] == 'Diners']['amount'],
 median = bp['medians'][0].get_ydata()[0]
 minimum = bp['caps'][0].get_ydata()[0]
 maximum = bp['caps'][1].get_ydata()[0]
-# Füge den Text an den gewünschten Positionen hinzu
+# Text an den gewünschten Positionen hinzufügen
 plt.text(0.6, median, str(median), ha='left', va='bottom')
 plt.text(0.6, minimum, str(minimum), ha='left', va='bottom')
 plt.text(0.6, maximum, str(maximum), ha='left', va='bottom')
@@ -241,7 +237,7 @@ plt.boxplot([data[data['PSP'] == 'Goldcard']['amount'],
 median = bp['medians'][0].get_ydata()[0]
 minimum = bp['caps'][0].get_ydata()[0]
 maximum = bp['caps'][1].get_ydata()[0]
-# Füge den Text an den gewünschten Positionen hinzu
+# Text an den gewünschten Positionen hinzufügen
 plt.text(0.5, median, str(median), ha='left', va='bottom')
 plt.text(0.6, minimum, str(minimum), ha='left', va='bottom')
 plt.text(0.6, maximum, str(maximum), ha='left', va='bottom')
@@ -256,8 +252,7 @@ plt.subplots_adjust(hspace=0.2, wspace=0.1)
 plt.figure(num='Korrelation')
 sns.heatmap(correlation_matrix, annot=True, cmap='coolwarm')
 
-# Durchschnittserfolgsrate anzeigen, welche Kreditkarte mit welchem Zahlungsdienstleister am erfolgreichsten war
-# Gruppierung und Berechnung der Erfolgsrate
+# Durchschnittserfolgsrate anzeigen, welche Kreditkarte mit welchem Zahlungsdienstleister am erfolgreichsten ist
 plt.figure(num='Durchschnittserfolg')
 # Gestapeltes Balkendiagramm erstellen
 erfolgsrate_avg.unstack().plot(kind='bar', stacked=True)
@@ -267,10 +262,8 @@ plt.ylabel('Durchschnittserfolgsrate')
 # Legende hinzufügen
 plt.legend(title='Zahlungsdienstleister', bbox_to_anchor=(1, 1))
 
-# Servicegebühr anzeigen, welche Kreditkarte mit welchem Zahlungsdienstleister
-# Gruppierung nach Kreditkarte und Zahlungsanbieter, und Berechnung des Durchschnitts der Servicegebühr
+# Servicegebühr anzeigen, welche Kreditkarte mit welchem Zahlungsdienstleister kostet was
 plt.figure(num='bar_Servicegebuehr_erfolgsrate')
-# Gruppierung nach Kreditkarte und Zahlungsanbieter, und Berechnung des Durchschnitts der Servicegebühr und Erfolgsrate
 # Balkendiagramm erstellen
 bars = plt.bar(range(len(gebuehr_avg)), gebuehr_avg.values)
 # Kreditkarten- und PSP-Kombinationen als x-Achsenticklabels setzen
@@ -306,9 +299,8 @@ plt.legend()
 """
 Datenaufbereitung
 """
-
-# Formatierung und Umbenennung der Spalten
-data.rename(columns={'Spalte1': 'laufende Nr.'}, inplace=True)
+# Formatierung und Namensgebung der ersten Spalte
+data.rename(columns={'Unnamed: 0': 'laufende Nr.'}, inplace=True)
 data['tmsp'] = pd.to_datetime(data['tmsp'])
 data['Duplikat'] = data['Duplikat'].astype(int)
 
@@ -321,7 +313,7 @@ if (max_zeitstempel - min_zeitstempel) >= pd.Timedelta(minutes=1):
 else:
     print("Die Datenhistorie ist unvollständig.")
     
-# Überprüfen des Dataframe auf leere Einträge
+# Überprüfen des Dataframes auf leere Einträge
 hat_leere_zellen = data.isnull().any().any()
 if hat_leere_zellen:
     print("Der Dataframe enthält leere Zellen.")
@@ -335,21 +327,21 @@ if len(unique_values) == 2 and 0 in unique_values and 1 in unique_values:
     print("Die Spalte 'success' enthält ausschließlich die Werte 0 und 1.")
 else:
     print("Die Spalte 'success' enthält andere Werte als 0 und 1.")  
-# Überprüfen, ob die Spalte "PSP" nur die spezifischen Werte enthält
+# Überprüfen, ob die Spalte "PSP" nur die allowed_values enthält
 allowed_values = ['UK_Card', 'Moneycard', 'Simplecard', 'Goldcard']
 result = data['PSP'].isin(allowed_values).all()
 if result:
     print("Die Spalte 'PSP' enthält ausschließlich die erlaubten Werte.")
 else:
     print("Die Spalte 'PSP' enthält andere Werte als die erlaubten.")
-# Überprüfen, ob die Spalte "PSP" nur die spezifischen Werte enthält
+# Überprüfen, ob die Spalte "PSP" nur die allowed_values enthält
 allowed_values = ['Austria', 'Germany', 'Switzerland']
 result = data['country'].isin(allowed_values).all()
 if result:
     print("Die Spalte 'country' enthält ausschließlich die erlaubten Werte.")
 else:
     print("Die Spalte 'country' enthält andere Werte als die erlaubten.")
-# Überprüfen, ob die Spalte "PSP" nur die spezifischen Werte enthält
+# Überprüfen, ob die Spalte "PSP" nur die allowed_values enthält
 allowed_values = ['Diners', 'Master', 'Visa']
 result = data['card'].isin(allowed_values).all()
 if result:
@@ -365,25 +357,12 @@ print(data.dtypes)
 # Daten in Spalte Duplikat bereits markiert
 data_2 = data.drop(data[data['Duplikat'] == 1].index)
 
-# nicht notwendige Merkmale entfernen aus data und data_2 entfernen
+# nicht notwendige Merkmale aus data und data_2 entfernen
 data = data.drop(['Duplikat','Jahr', 'Monat', 'Tag', 'uhrzeit', 'Hour'], axis=1)
 data_2 = data_2.drop(['Duplikat','Jahr', 'Monat', 'Tag', 'uhrzeit', 'Hour'], axis=1)
-
-# Erstellen der Trainings- und Testdatensätze 80 / 20
-#X_train, X_test, y_train, y_test = train_test_split(data[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data['success'], test_size=0.2, random_state=42)
-#X_train_ohne_duplikate, X_test_ohne_duplikate, y_train_ohne_duplikate, y_test_ohne_duplikate = train_test_split(data_2[['tmsp', 'country', 'amount', 'PSP', '3D_secured', 'card', 'gebuehr']], data_2['success'], test_size=0.2, random_state=42)
 
 
 # DataFrame als Excel-Datei für die weitere Bearbeitung speichern
 ausgabe = input("geben Sie den Speicherort für die Ausgabe an: ")
-
 data.to_excel(ausgabe + '/bereinigter_Datensatz.xlsx' , index=False)
 data_2.to_excel(ausgabe + '/bereinigter_Datensatz_ohne_Duplikate.xlsx', index=False)
-#X_train.to_excel(ausgabe + '/X_train.xlsx', index=False)
-#X_test.to_excel(ausgabe + '/X_test.xlsx', index=False) 
-#y_train.to_excel(ausgabe + '/y_train.xlsx', index=False) 
-#y_test.to_excel(ausgabe + '/y_test.xlsx', index=False) 
-#X_train_ohne_duplikate.to_excel(ausgabe + '/X_train_ohne_duplikate.xlsx', index=False)
-#X_test_ohne_duplikate.to_excel(ausgabe + '/X_test_ohne_duplikate.xlsx', index=False)
-#y_train_ohne_duplikate.to_excel(ausgabe + '/y_train_ohne_duplikate.xlsx', index=False) 
-#y_test_ohne_duplikate.to_excel(ausgabe + '/y_test_ohne_duplikate.xlsx', index=False) 
