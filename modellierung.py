@@ -10,6 +10,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import classification_report
 from sklearn.metrics import roc_auc_score
+import pickle
 #from sklearn.model_selection import GridSearchCV
 
 ''''
@@ -29,58 +30,68 @@ def eingabe_mit_zulaessigen_woertern(prompt, zulaessige_woerter):
 
 # bereinigte Daten einlesen
 eingabe = input("Speicherort der Eingabedaten: ")
-data_ohne_duplikate = pd.read_excel(eingabe + '/bereinigter_Datensatz_ohne_Duplikate.xlsx')
-data_mit_duplikate = pd.read_excel(eingabe + '/bereinigter_Datensatz.xlsx')    
+print('Verfügbare Datensätze: bereinigter_Datensatz_ohne_Duplikate.xlsx oder bereinigter_Datensatz.xlsx')
+zulaessige_woerter = ['bereinigter_Datensatz_ohne_Duplikate.xlsx','bereinigter_Datensatz.xlsx']
+eingabedatei = eingabe_mit_zulaessigen_woertern("Welcher Datensatz soll geladen werden? ", zulaessige_woerter)
 
-# Definieren Sie die Features (unabhängigen Variablen) und die Zielvariable (Kreditkarte)
-X = data_mit_duplikate.drop(columns=['tmsp','success','gebuehr', 'laufende Nr.'])
-y = np.ravel(data_mit_duplikate[['success']])
+if eingabedatei == 'bereinigter_Datensatz_ohne_Duplikate.xlsx':
+    bereinigte_data = pd.read_excel(eingabe + '/bereinigter_Datensatz_ohne_Duplikate.xlsx')
+else:
+    bereinigte_data = pd.read_excel(eingabe + '/bereinigter_Datensatz.xlsx')    
+
+# Definieren die Features (unabhängigen Variablen) und die Zielvariable
+X = bereinigte_data.drop(columns=['tmsp','success','gebuehr', 'laufende Nr.'])
+y = np.ravel(bereinigte_data[['success']])
 
 # Umwandlung in Dummy-Variablen (One-Hot-Encoding)
 X = pd.get_dummies(X, columns=['country', 'PSP', 'card'])
 
-# Teilen Sie die Daten in Trainings- und Testdaten auf (z.B. 80% Training, 20% Test)
+# Teilen die Daten in Trainings- und Testdaten auf (80% Training, 20% Test)
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 '''
 Normale logistic Regression
 '''
-# logistic Regression
-log_reg_model = LogisticRegression(C= 0.1, class_weight= 'none', max_iter= 500, penalty= 'l2', solver= 'newton-cg')
+# Abfrage ob Baseline-Modell verwendet werden soll
+zulaessige_woerter = ['ja', 'nein']
+baseline =  eingabe_mit_zulaessigen_woertern("Soll das Baseline-Modell verwendet werden? ", zulaessige_woerter)
 
-# grid_search führt zu langen Ladezeiten. Ergebnis von grid search in log_reg_model = logisitcRegression() oben befüllt und damit weitergearbeitet
-# Definiere eine Liste von möglichen Werten für den Regularisierungsparameter C
+if baseline == "ja":
+    # logistic Rregression Baseline-Modell
+    log_reg_model = LogisticRegression()
+else:
+    # logistic Regression nach Hyperparameter Optimierung
+    log_reg_model = LogisticRegression(C= 0.1, class_weight= 'none', max_iter= 500, penalty= 'l2', solver= 'newton-cg')
+
+# grid_search führt zu langen Ladezeiten. Ergebnis von grid search in log_reg_model befüllt und damit weitergearbeitet
+# Liste von möglichen Parameter
 #param_grid = {'C': [0.1, 0.5, 1.0, 5.0, 10.0],
 #              'penalty':['l1','l2'],
 #              'solver':['liblinear','lbfgs','newton-cg','sag','saga'],
 #              'max_iter':[500,1000,10000],
 #             'class_weight':['balanced','none']}
 
-# Erstelle das Grid Search Objekt mit Cross-Validation (z.B. 5-Fold Cross-Validation)
+# Grid Search Objekt mit Cross-Validation (z.B. 5-Fold Cross-Validation)
 #grid_search = GridSearchCV(log_reg_model, param_grid, cv=5)
 
 # Führe die Grid Search durch
 #grid_search.fit(X_train, y_train)
 
-# Zeige die besten Hyperparameter-Kombinationen und die entsprechende Leistungsmetrik (z.B. Genauigkeit) an
+# Zeige die besten Hyperparameter-Kombinationen und die entsprechende Leistungsmetrik (Genauigkeit) an
 #print("Beste Hyperparameter-Kombination:", grid_search.best_params_)
 #print("Beste Leistung (z.B. Genauigkeit):", grid_search.best_score_)
 
+# Modell trainieren
 log_reg_model.fit(X_train, y_train)
 
-# Evaluieren Sie die Leistung des Modells auf den Testdaten (optional)
-accuracy = log_reg_model.score(X_test, y_test)
-print('Genauigkeit:', accuracy)
-
-# Speichern Sie das trainierte Modell in einer Datei
-import pickle
+# Speichern das trainierte Modell in eine Datei
 with open('trainiertes_logistisches_modell.pkl', 'wb') as file:
     pickle.dump(log_reg_model, file)
     
-# Vorhersage für die Testdaten
+# Evaluation des Modells mit den Testdaten
 y_pred = np.ravel(log_reg_model.predict(X_test))
 auc_score = roc_auc_score(y_test, y_pred)
-print("AUC-Wert:", auc_score)    
+print("AUC-Score:", auc_score)    
 classification_report_result = classification_report(y_test, y_pred)
 print(f'Classification Report success:\n{classification_report_result}')
 
@@ -88,19 +99,19 @@ print(f'Classification Report success:\n{classification_report_result}')
 '''
 Vorhersage machen
 '''
-# Future Datafram erzeugen
+# Future Dataframe erzeugen
 columns = ["amount", "3D_secured", "country_Austria", "country_Germany",  "country_Switzerland", "PSP_Goldcard","PSP_Moneycard", "PSP_Simplecard", "PSP_UK_Card", "card_Diners", "card_Master", "card_Visa"]
 future_data = pd.DataFrame({col: [] for col in columns})
 
-# Dataframe Future Data befüllen u.a. aufgrund von Benutzerangaben
+# Dataframe Future Data befüllen u.a. aufgrund von Benutzerangaben durch Abfrage
 print('Um den besten PSP zu wählen, gebe bitte die folgenden Informationen für deine Transaktion ein: ')
 ausgabe = input("Speicherort der PSP Vorhersage: ")
-zulaessige_woerter_kreditkarte = ['Visa','Master','Diners']
-kreditkarte = eingabe_mit_zulaessigen_woertern("Name der Kreditkarte: ", zulaessige_woerter_kreditkarte)
-zulaessige_woerte_land = ['Deutschland','Schweitz','Australien']
-land = eingabe_mit_zulaessigen_woertern("Land der Transaktion: ", zulaessige_woerte_land)
-zulaessige_woerter_secured = ['ja', 'nein']
-secured =  eingabe_mit_zulaessigen_woertern("benutzen Sie die 3D Identifizierung: ", zulaessige_woerter_secured)
+zulaessige_woerter = ['Visa','Master','Diners']
+kreditkarte = eingabe_mit_zulaessigen_woertern("Name der Kreditkarte: ", zulaessige_woerter)
+zulaessige_woerte= ['Deutschland','Schweitz','Australien']
+land = eingabe_mit_zulaessigen_woertern("Land der Transaktion: ", zulaessige_woerte)
+zulaessige_woerter = ['ja', 'nein']
+secured =  eingabe_mit_zulaessigen_woertern("benutzen Sie die 3D Identifizierung: ", zulaessige_woerter)
 betrag = input("geben Sie den Betrag an: ")
 
 future_data['amount']= [int(betrag), int(betrag), int(betrag), int(betrag)]
