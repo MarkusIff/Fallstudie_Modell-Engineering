@@ -61,7 +61,7 @@ if baseline == "ja":
     log_reg_model = LogisticRegression()
 else:
     # logistic Regression nach Hyperparameter Optimierung
-    log_reg_model = LogisticRegression(C= 0.1, class_weight= 'none', max_iter= 500, penalty= 'l2', solver= 'newton-cg')
+    log_reg_model = LogisticRegression(C= 0.1, class_weight= 'balanced', max_iter= 500, penalty= 'l2', solver= 'newton-cg')
 
 # grid_search führt zu langen Ladezeiten. Ergebnis von grid search in log_reg_model befüllt und damit weitergearbeitet
 # Liste von möglichen Parameter
